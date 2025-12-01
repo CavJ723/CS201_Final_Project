@@ -68,9 +68,75 @@ public void addPerson(Scanner input) {
     writePersonToFile(person, selectedFile);
 }
 
-    // Add placeholder methods for the ones called in Main.java
+
     public void removePerson(Scanner input) {
-        System.out.println("Remove person functionality not yet implemented.");
+        // First, let user select which file to remove from
+        File selectedFile = selectFileForReading(input);
+        if (selectedFile == null) {
+            System.out.println("File selection cancelled. Returning to menu.");
+            return;
+        }
+        
+        System.out.print("Enter the last name of the person to remove: ");
+        String lastName = input.nextLine();
+        
+        // Load people from the selected file and find matches
+        ArrayList<Person> filePersons = loadPersonsFromFile(selectedFile);
+        ArrayList<Person> matches = new ArrayList<>();
+        for (Person person : filePersons) {
+            if (person.getLastName().equalsIgnoreCase(lastName)) {
+                matches.add(person);
+            }
+        }
+        
+        if (matches.isEmpty()) {
+            System.out.println("No person found with last name: " + lastName);
+            return;
+        }
+        
+        Person toRemove = null;
+        
+        if (matches.size() == 1) {
+            // Only one match found
+            toRemove = matches.get(0);
+            System.out.println("Found: " + toRemove.toString());
+            System.out.print("Are you sure you want to remove this person? (y/n): ");
+            String confirm = input.nextLine().trim().toLowerCase();
+            
+            if (!confirm.equals("y") && !confirm.equals("yes")) {
+                System.out.println("Removal cancelled.");
+                return;
+            }
+        } else {
+            // Multiple matches found - let user choose
+            System.out.println("\nMultiple people found with last name '" + lastName + "':");
+            for (int i = 0; i < matches.size(); i++) {
+                System.out.println((i + 1) + ". " + matches.get(i).toString());
+            }
+            System.out.println("0. Cancel removal");
+            
+            System.out.print("Select the number of the person to remove: ");
+            int choice = input.nextInt();
+            input.nextLine(); // consume newline
+            
+            if (choice == 0) {
+                System.out.println("Removal cancelled.");
+                return;
+            } else if (choice >= 1 && choice <= matches.size()) {
+                toRemove = matches.get(choice - 1);
+            } else {
+                System.out.println("Invalid selection. Removal cancelled.");
+                return;
+            }
+        }
+        
+        // Remove from memory (if it exists there)
+        people.remove(toRemove);
+        
+        // Remove from file by rewriting it without the removed person
+        removePersonFromFile(toRemove, selectedFile);
+        
+        System.out.println("Person removed successfully from file!");
     }
     
     public void displayPersons() {
@@ -109,6 +175,7 @@ public void addPerson(Scanner input) {
             System.out.println("\nOptions:");
             System.out.println("1. Write to an existing file");
             System.out.println("2. Create a new file");
+            System.out.println("3. Delete a file");
             System.out.print("Choose an option: ");
             
             int choice = input.nextInt();
@@ -118,6 +185,8 @@ public void addPerson(Scanner input) {
                 selectExistingFile(input, files);
             } else if (choice == 2) {
                 createNewFile(input);
+            } else if (choice == 3) {
+                deleteFile(input, files);
             } else {
                 System.out.println("Invalid choice. Returning to main menu.");
             }
@@ -181,6 +250,89 @@ public void addPerson(Scanner input) {
             }
         } else {
             System.out.println("Invalid file name. Returning to main menu.");
+        }
+    }
+    
+    private void deleteFile(Scanner input, File[] files) {
+        System.out.println("\n========== File Deletion ==========");
+        System.out.println("WARNING: This action cannot be undone!");
+        System.out.println("Available files to delete:");
+        
+        for (int i = 0; i < files.length; i++) {
+            System.out.println((i + 1) + ". " + files[i].getName() + " (" + files[i].length() + " bytes)");
+        }
+        System.out.println("0. Cancel deletion");
+        
+        System.out.print("Select the number of the file you want to delete: ");
+        int fileChoice = input.nextInt();
+        input.nextLine(); // consume newline
+        
+        if (fileChoice == 0) {
+            System.out.println("File deletion cancelled.");
+            return;
+        }
+        
+        if (fileChoice >= 1 && fileChoice <= files.length) {
+            File selectedFile = files[fileChoice - 1];
+            
+            // Show file preview
+            System.out.println("\nFile Preview for '" + selectedFile.getName() + "':");
+            System.out.println("========================================");
+            showFilePreview(selectedFile);
+            System.out.println("========================================");
+            
+            // Double confirmation
+            System.out.println("\nPlease review the file content above carefully.");
+            System.out.print("Are you absolutely sure you want to delete '" + selectedFile.getName() + "'? (yes/no): ");
+            String firstConfirm = input.nextLine().trim().toLowerCase();
+            
+            if (firstConfirm.equals("yes")) {
+                System.out.print("Type the file name '" + selectedFile.getName() + "' to confirm deletion: ");
+                String nameConfirm = input.nextLine().trim();
+                
+                if (nameConfirm.equals(selectedFile.getName())) {
+                    // Attempt to delete the file
+                    if (selectedFile.delete()) {
+                        System.out.println("SUCCESS: File '" + selectedFile.getName() + "' has been successfully deleted!");
+                    } else {
+                        System.out.println("ERROR: Could not delete file '" + selectedFile.getName() + "'.");
+                        System.out.println("   The file might be in use or you may not have permission to delete it.");
+                    }
+                } else {
+                    System.out.println("ERROR: File name does not match. Deletion cancelled for safety.");
+                }
+            } else {
+                System.out.println("Deletion cancelled.");
+            }
+        } else {
+            System.out.println("Invalid file number. Deletion cancelled.");
+        }
+    }
+    
+    private void showFilePreview(File file) {
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
+            String line;
+            int lineCount = 0;
+            int maxLines = 20; // Show first 20 lines
+            
+            while ((line = reader.readLine()) != null && lineCount < maxLines) {
+                System.out.println(line);
+                lineCount++;
+            }
+            
+            if (lineCount == maxLines) {
+                // Check if there are more lines
+                if (reader.readLine() != null) {
+                    System.out.println("... (file continues, showing first " + maxLines + " lines only)");
+                }
+            }
+            
+            if (lineCount == 0) {
+                System.out.println("(File is empty)");
+            }
+            
+        } catch (IOException e) {
+            System.out.println("Error reading file preview: " + e.getMessage());
         }
     }
     
@@ -458,5 +610,155 @@ public void addPerson(Scanner input) {
         } catch (IOException e) {
             System.out.println("Error checking/adding headers to file: " + e.getMessage());
         }
+    }
+    
+    /**
+     * Method to select a file for reading/removing operations
+     */
+    private File selectFileForReading(Scanner input) {
+        System.out.println("\n========== File Selection for Removal ==========");
+        
+        // Check for existing .txt files in the current directory
+        File currentDir = new File(".");
+        File[] files = currentDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".txt"));
+        
+        if (files == null || files.length == 0) {
+            System.out.println("No text files found in the current directory.");
+            return null;
+        }
+        
+        System.out.println("Available text files:");
+        for (int i = 0; i < files.length; i++) {
+            System.out.println((i + 1) + ". " + files[i].getName());
+        }
+        System.out.println("0. Cancel");
+        
+        System.out.print("Select the file to remove person from: ");
+        int choice = input.nextInt();
+        input.nextLine(); // consume newline
+        
+        if (choice == 0) {
+            return null; // Cancel
+        } else if (choice >= 1 && choice <= files.length) {
+            File selectedFile = files[choice - 1];
+            System.out.println("Selected file: " + selectedFile.getName());
+            return selectedFile;
+        } else {
+            System.out.println("Invalid file number.");
+            return null;
+        }
+    }
+    
+    /**
+     * Removes a person from the specified file by rewriting it without that person
+     */
+    private void removePersonFromFile(Person personToRemove, File file) {
+        try {
+            // Read all lines from the file
+            java.util.List<String> lines = new java.util.ArrayList<>();
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    lines.add(line);
+                }
+            }
+            
+            // Rewrite the file, excluding the person to be removed
+            try (PrintWriter writer = new PrintWriter(new FileWriter(file, false))) {
+                boolean inDataSection = false;
+                
+                for (String line : lines) {
+                    // Check if we've reached the data section (after the separator line)
+                    if (line.startsWith("--------------------")) {
+                        writer.println(line);
+                        inDataSection = true;
+                        continue;
+                    }
+                    
+                    // If we're in the data section, check if this line represents the person to remove
+                    if (inDataSection && !line.trim().isEmpty() && !line.contains("=== End of List ===")) {
+                        // Parse the line to check if it matches the person to remove
+                        String[] parts = line.split("\\s+");
+                        if (parts.length >= 2) {
+                            String fileLastName = parts[0].trim();
+                            String fileFirstName = parts[1].trim();
+                            
+                            // Compare with the person to remove
+                            if (fileLastName.equalsIgnoreCase(personToRemove.getLastName()) && 
+                                fileFirstName.equalsIgnoreCase(personToRemove.getFirstName())) {
+                                // Skip this line (don't write it back)
+                                System.out.println("Removed person from file: " + personToRemove.getFirstName() + " " + personToRemove.getLastName());
+                                continue;
+                            }
+                        }
+                    }
+                    
+                    // Write all other lines back to the file
+                    writer.println(line);
+                }
+            }
+            
+        } catch (IOException e) {
+            System.out.println("Error removing person from file: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Loads persons from a file and returns them as an ArrayList
+     */
+    private ArrayList<Person> loadPersonsFromFile(File file) {
+        ArrayList<Person> loadedPersons = new ArrayList<>();
+        
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
+            String line;
+            boolean inDataSection = false;
+            
+            while ((line = reader.readLine()) != null) {
+                // Skip header lines until we reach the data section
+                if (line.startsWith("--------------------")) {
+                    inDataSection = true;
+                    continue;
+                }
+                
+                // If we're in the data section and the line has content
+                if (inDataSection && !line.trim().isEmpty() && 
+                    !line.contains("=== End of List ===") && 
+                    !line.contains("=== Film Project Personnel List ===") &&
+                    !line.contains("Generated on:")) {
+                    
+                    // Parse the line to extract person information
+                    // The format is: LastName FirstName Contact Type (fixed width columns)
+                    if (line.length() >= 60) { // Minimum expected line length
+                        String lastName = line.substring(0, 20).trim();
+                        String firstName = line.substring(20, 40).trim();
+                        String contact = line.substring(40, 65).trim();
+                        String type = line.substring(65).trim();
+                        
+                        // Create appropriate person object based on type
+                        Person person = null;
+                        switch (type.toLowerCase()) {
+                            case "actor":
+                                person = new Actor(firstName, lastName, contact, "Unknown"); // Default specialty
+                                break;
+                            case "crew":
+                                person = new Crew(firstName, lastName, contact, "Unknown"); // Default department
+                                break;
+                            case "volunteer":
+                                person = new Volunteer(firstName, lastName, contact, "Unknown"); // Default task
+                                break;
+                        }
+                        
+                        if (person != null) {
+                            loadedPersons.add(person);
+                        }
+                    }
+                }
+            }
+            
+        } catch (IOException e) {
+            System.out.println("Error reading file: " + e.getMessage());
+        }
+        
+        return loadedPersons;
     }
 }
