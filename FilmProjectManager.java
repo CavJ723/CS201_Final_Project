@@ -157,7 +157,7 @@ public void addPerson(Scanner input) {
     }
     
     // PRE: A valid Scanner object is passed in
-    // POST: Finds and displays persons based on user input
+    // POST: Finds and displays persons based on user input (currently locked)
     public void findPerson(Scanner input) {
         System.out.println("Find person functionality not yet implemented.");
     }
@@ -191,6 +191,8 @@ public void addPerson(Scanner input) {
         System.out.println("Volunteers: " + volunteerCount);
     }
 
+    // PRE: A valid Scanner object is passed in
+    // POST: Manages payroll-related operations (currently locked)
     public void payrollManagement(Scanner input) {
         System.out.println("Payroll management is currently locked and not available.");
     }
@@ -791,29 +793,50 @@ public void addPerson(Scanner input) {
                     
                     // Parse the line to extract person information
                     // The format is: LastName FirstName Contact Type (fixed width columns)
-                    if (line.length() >= 60) { // Minimum expected line length
-                        String lastName = line.substring(0, 20).trim();
-                        String firstName = line.substring(20, 40).trim();
-                        String contact = line.substring(40, 65).trim();
-                        String type = line.substring(65).trim();
+                    try {
+                        String lastName = "";
+                        String firstName = "";
+                        String contact = "";
+                        String type = "";
                         
-                        // Create appropriate person object based on type
-                        Person person = null;
-                        switch (type.toLowerCase()) {
-                            case "actor":
-                                person = new Actor(firstName, lastName, contact, "Unknown"); // Default specialty
-                                break;
-                            case "crew":
-                                person = new Crew(firstName, lastName, contact, "Unknown"); // Default department
-                                break;
-                            case "volunteer":
-                                person = new Volunteer(firstName, lastName, contact, "Unknown"); // Default task
-                                break;
+                        // Extract each field safely, accounting for varying line lengths
+                        // Column positions: LastName(0-20), FirstName(21-41), Contact(42-67), Type(68+)
+                        if (line.length() > 0) {
+                            lastName = line.substring(0, Math.min(21, line.length())).trim();
+                        }
+                        if (line.length() > 21) {
+                            firstName = line.substring(21, Math.min(42, line.length())).trim();
+                        }
+                        if (line.length() > 42) {
+                            contact = line.substring(42, Math.min(68, line.length())).trim();
+                        }
+                        if (line.length() > 68) {
+                            type = line.substring(68).trim();
                         }
                         
-                        if (person != null) {
-                            loadedPersons.add(person);
+                        // Only create person if we have at least a name and type
+                        if (!lastName.isEmpty() && !firstName.isEmpty() && !type.isEmpty()) {
+                            // Create appropriate person object based on type
+                            Person person = null;
+                            switch (type.toLowerCase()) {
+                                case "actor":
+                                    person = new Actor(firstName, lastName, contact, "Unknown"); // Default specialty
+                                    break;
+                                case "crew":
+                                    person = new Crew(firstName, lastName, contact, "Unknown"); // Default department
+                                    break;
+                                case "volunteer":
+                                    person = new Volunteer(firstName, lastName, contact, "Unknown"); // Default task
+                                    break;
+                            }
+                            
+                            if (person != null) {
+                                loadedPersons.add(person);
+                            }
                         }
+                    } catch (Exception e) {
+                        // Skip lines that can't be parsed
+                        System.out.println("Warning: Could not parse line: " + line);
                     }
                 }
             }
