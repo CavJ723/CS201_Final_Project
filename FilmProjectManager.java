@@ -9,8 +9,10 @@ public class FilmProjectManager {
         people = new ArrayList<>();
     }
 
+// PRE: A valid Scanner object is passed in
+// POST: A new Person (Actor, Crew, or Volunteer) is created based on user input
 public void addPerson(Scanner input) {
-    // Handle file selection for writing
+    // File selection for writing
     File selectedFile = selectFileForWriting(input);
     if (selectedFile == null) {
         System.out.println("File selection cancelled. Returning to menu.");
@@ -23,13 +25,14 @@ public void addPerson(Scanner input) {
     System.out.print("Enter first name: ");
     String firstName = input.nextLine();
 
-    System.out.print("Enter contact information (phonenumber or email): ");
+    System.out.print("Enter contact information (phone-number or email): ");
     String contact = input.nextLine();
 
     System.out.println("Select person type:");
     System.out.println("1. Actor");
     System.out.println("2. Crew");
     System.out.println("3. Volunteer");
+    System.out.println("0. Return to menu");
     System.out.print("Choice: ");
 
     int typeChoice = input.nextInt();
@@ -68,9 +71,10 @@ public void addPerson(Scanner input) {
     writePersonToFile(person, selectedFile);
 }
 
-
+    // PRE: A valid Scanner object is passed in
+    // POST: The specified Person is removed from the selected file and memory
     public void removePerson(Scanner input) {
-        // First, let user select which file to remove from
+        // Have user select which file to remove from
         File selectedFile = selectFileForReading(input);
         if (selectedFile == null) {
             System.out.println("File selection cancelled. Returning to menu.");
@@ -97,7 +101,7 @@ public void addPerson(Scanner input) {
         Person toRemove = null;
         
         if (matches.size() == 1) {
-            // Only one match found
+            // One match found
             toRemove = matches.get(0);
             System.out.println("Found: " + toRemove.toString());
             System.out.print("Are you sure you want to remove this person? (y/n): ");
@@ -108,7 +112,7 @@ public void addPerson(Scanner input) {
                 return;
             }
         } else {
-            // Multiple matches found - let user choose
+            // Multiple matches found, then let user choose
             System.out.println("\nMultiple people found with last name '" + lastName + "':");
             for (int i = 0; i < matches.size(); i++) {
                 System.out.println((i + 1) + ". " + matches.get(i).toString());
@@ -139,6 +143,8 @@ public void addPerson(Scanner input) {
         System.out.println("Person removed successfully from file!");
     }
     
+    // PRE: No preconditions
+    // POST: Displays all persons in the system
     public void displayPersons() {
         if (people.isEmpty()) {
             System.out.println("No people in the system.");
@@ -150,15 +156,47 @@ public void addPerson(Scanner input) {
         }
     }
     
+    // PRE: A valid Scanner object is passed in
+    // POST: Finds and displays persons based on user input
     public void findPerson(Scanner input) {
         System.out.println("Find person functionality not yet implemented.");
     }
     
+    // PRE: A valid Scanner object is passed in
+    // POST: Counts and displays the number of persons by role based on user input
     public void countRole(Scanner input) {
-        System.out.println("Count role functionality not yet implemented.");
+        System.out.println("Which file do you want to count roles from? ");
+        File selectedFile = selectFileForReading(input);
+        if (selectedFile == null) {
+            System.out.println("File selection cancelled. Returning to menu.");
+            return;
+        }
+        ArrayList<Person> filePersons = loadPersonsFromFile(selectedFile); 
+        int actorCount = 0;
+        int crewCount = 0;
+        int volunteerCount = 0;
+        for (Person person : filePersons) {
+            if (person instanceof Actor) {
+                actorCount++;
+            } else if (person instanceof Crew) {
+                crewCount++;
+            } else if (person instanceof Volunteer) {
+                volunteerCount++;
+            }
+        }
+
+        System.out.println("Role counts in file '" + selectedFile.getName() + "':");
+        System.out.println("Actors: " + actorCount);
+        System.out.println("Crew: " + crewCount);
+        System.out.println("Volunteers: " + volunteerCount);
+    }
+
+    public void payrollManagement(Scanner input) {
+        System.out.println("Payroll management is currently locked and not available.");
     }
     
-    // File management methods
+    // PRE: A valid Scanner object is passed in
+    // POST: Manages file operations such as creating, selecting, and deleting files
     public void manageFiles(Scanner input) {
         System.out.println("\n========== File Management ==========");
         
@@ -168,6 +206,7 @@ public void addPerson(Scanner input) {
         
         if (files != null && files.length > 0) {
             System.out.println("Existing text files found:");
+            // Display files
             for (int i = 0; i < files.length; i++) {
                 System.out.println((i + 1) + ". " + files[i].getName());
             }
@@ -176,6 +215,7 @@ public void addPerson(Scanner input) {
             System.out.println("1. Write to an existing file");
             System.out.println("2. Create a new file");
             System.out.println("3. Delete a file");
+            System.out.println("0. Return to main menu");
             System.out.print("Choose an option: ");
             
             int choice = input.nextInt();
@@ -203,11 +243,14 @@ public void addPerson(Scanner input) {
         }
     }
     
+    // PRE: A valid Scanner object and array of Files are passed in
+    // POST: Allows user to select an existing file to write to
     private void selectExistingFile(Scanner input, File[] files) {
         System.out.print("Enter the number of the file you want to write to: ");
         int fileChoice = input.nextInt();
         input.nextLine(); // consume newline
         
+        // Validate the file choice
         if (fileChoice >= 1 && fileChoice <= files.length) {
             File selectedFile = files[fileChoice - 1];
             System.out.println("Selected file: " + selectedFile.getName());
@@ -219,6 +262,8 @@ public void addPerson(Scanner input) {
         }
     }
     
+    // PRE: A valid Scanner object is passed in
+    // POST: Creates a new file and writes table headers to it
     private void createNewFile(Scanner input) {
         System.out.print("Enter the name for the new file (without .txt extension): ");
         String fileName = input.nextLine().trim();
@@ -236,7 +281,7 @@ public void addPerson(Scanner input) {
                     System.out.println("File '" + newFile.getName() + "' already exists!");
                     System.out.print("Do you want to write to it anyway? (y/n): ");
                     String response = input.nextLine().trim().toLowerCase();
-                    
+
                     if (response.equals("y") || response.equals("yes")) {
                         // Ensure existing file has headers before writing
                         ensureFileHasHeaders(newFile);
@@ -253,11 +298,15 @@ public void addPerson(Scanner input) {
         }
     }
     
+    // PRE: A valid Scanner object and array of Files are passed in
+    // POST: Deletes a selected file
+    //       Use double confirmation to prevent accidental deletions
     private void deleteFile(Scanner input, File[] files) {
         System.out.println("\n========== File Deletion ==========");
         System.out.println("WARNING: This action cannot be undone!");
         System.out.println("Available files to delete:");
         
+        // Display files with their sizes
         for (int i = 0; i < files.length; i++) {
             System.out.println((i + 1) + ". " + files[i].getName() + " (" + files[i].length() + " bytes)");
         }
@@ -272,6 +321,7 @@ public void addPerson(Scanner input) {
             return;
         }
         
+        // Will show preview of contents inside the file and ask for double confirmation
         if (fileChoice >= 1 && fileChoice <= files.length) {
             File selectedFile = files[fileChoice - 1];
             
@@ -286,6 +336,7 @@ public void addPerson(Scanner input) {
             System.out.print("Are you absolutely sure you want to delete '" + selectedFile.getName() + "'? (yes/no): ");
             String firstConfirm = input.nextLine().trim().toLowerCase();
             
+            // By typing the file name, this ensures user really wants to delete it
             if (firstConfirm.equals("yes")) {
                 System.out.print("Type the file name '" + selectedFile.getName() + "' to confirm deletion: ");
                 String nameConfirm = input.nextLine().trim();
@@ -309,6 +360,8 @@ public void addPerson(Scanner input) {
         }
     }
     
+    // PRE: A valid File object is passed in
+    // POST: Displays a preview of the file's contents (first 20 lines)
     private void showFilePreview(File file) {
         try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
             String line;
@@ -336,10 +389,13 @@ public void addPerson(Scanner input) {
         }
     }
     
+    // PRE: A valid Scanner object and File are passed in
+    // POST: Writes user-selected content to the specified file
     private void writeToFile(Scanner input, File file) {
         System.out.println("\nWhat would you like to write to the file?");
         System.out.println("1. Current list of all persons");
         System.out.println("2. Custom text");
+        System.out.println("0. Return to menu");
         System.out.print("Choose an option: ");
         
         int choice = input.nextInt();
@@ -366,6 +422,8 @@ public void addPerson(Scanner input) {
         }
     }
     
+    // PRE: A valid PrintWriter object is passed in
+    // POST: Writes the personnel table to the specified file
     private void writePersonnelTableToFile(PrintWriter writer) {
         writer.println("=== Film Project Personnel List ===");
         writer.println("Generated on: " + java.time.LocalDateTime.now());
@@ -399,7 +457,8 @@ public void addPerson(Scanner input) {
         writer.println();
     }
     
-    // Helper method to truncate strings that are too long for the table
+    // PRE: A valid Scanner object is passed in
+    // POST: Allows the user to select a file for writing or create a new one
     private String truncateString(String str, int maxLength) {
         if (str == null) {
             return "";
@@ -410,7 +469,8 @@ public void addPerson(Scanner input) {
         return str.substring(0, maxLength - 3) + "...";
     }
     
-    // Method to select file for writing at the beginning of add person process
+    // PRE: A valid Scanner object is passed in
+    // POST: Allows the user to select a file for writing or create a new one
     private File selectFileForWriting(Scanner input) {
         System.out.println("\n========== File Selection ==========");
         
@@ -453,6 +513,8 @@ public void addPerson(Scanner input) {
         }
     }
     
+    // PRE: A valid Scanner object is passed in
+    // POST: Allows the user to select an existing file for writing
     private File selectExistingFileForWriting(Scanner input, File[] files) {
         System.out.print("Enter the number of the file you want to write to: ");
         int fileChoice = input.nextInt();
@@ -472,6 +534,8 @@ public void addPerson(Scanner input) {
         }
     }
     
+    // PRE: A valid Scanner object is passed in
+    // POST: Creates a new file and writes table headers to it
     private File createNewFileForWriting(Scanner input) {
         System.out.print("Enter the name for the new file (without .txt extension): ");
         String fileName = input.nextLine().trim();
@@ -506,6 +570,8 @@ public void addPerson(Scanner input) {
         }
     }
     
+    // PRE: A valid File object is passed in
+    // POST: Writes table headers to the specified file
     private void writeTableHeadersToFile(File file) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(file, false))) {
             writer.println("=== Film Project Personnel List ===");
@@ -521,6 +587,8 @@ public void addPerson(Scanner input) {
         }
     }
     
+    // PRE: A valid Person object and File are passed in
+    // POST: Writes the person's details to the specified file
     private void writePersonToFile(Person person, File file) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(file, true))) {
             String rowFormat = "%-20s %-20s %-25s %-15s%n";
@@ -538,10 +606,8 @@ public void addPerson(Scanner input) {
         }
     }
     
-    /**
-     * Ensures that a file has proper table headers. If the file is empty or doesn't have headers,
-     * this method will add them.
-     */
+    // PRE: A valid File object is passed in
+    // POST: Ensures the file has proper table headers, adding them if necessary
     private void ensureFileHasHeaders(File file) {
         try {
             // Check if file exists and has content
@@ -612,9 +678,8 @@ public void addPerson(Scanner input) {
         }
     }
     
-    /**
-     * Method to select a file for reading/removing operations
-     */
+    // PRE: A valid Scanner object is passed in
+    // POST: Allows the user to select a file for reading
     private File selectFileForReading(Scanner input) {
         System.out.println("\n========== File Selection for Removal ==========");
         
@@ -649,9 +714,8 @@ public void addPerson(Scanner input) {
         }
     }
     
-    /**
-     * Removes a person from the specified file by rewriting it without that person
-     */
+    // PRE: A valid Person object and File are passed in
+    // POST: Removes the specified person from the file by rewriting it without that person
     private void removePersonFromFile(Person personToRemove, File file) {
         try {
             // Read all lines from the file
@@ -703,9 +767,8 @@ public void addPerson(Scanner input) {
         }
     }
     
-    /**
-     * Loads persons from a file and returns them as an ArrayList
-     */
+    // PRE: A valid File object is passed in
+    // POST: Loads persons from the file and returns them as an ArrayList
     private ArrayList<Person> loadPersonsFromFile(File file) {
         ArrayList<Person> loadedPersons = new ArrayList<>();
         
