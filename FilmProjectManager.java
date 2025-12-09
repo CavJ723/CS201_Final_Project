@@ -683,7 +683,7 @@ public void addPerson(Scanner input) {
     // PRE: A valid Scanner object is passed in
     // POST: Allows the user to select a file for reading
     private File selectFileForReading(Scanner input) {
-        System.out.println("\n========== File Selection for Removal ==========");
+        System.out.println("\n========== File Selection ==========");
         
         // Check for existing .txt files in the current directory
         File currentDir = new File(".");
@@ -700,7 +700,7 @@ public void addPerson(Scanner input) {
         }
         System.out.println("0. Cancel");
         
-        System.out.print("Select the file to remove person from: ");
+        System.out.print("Select the file: ");
         int choice = input.nextInt();
         input.nextLine(); // consume newline
         
@@ -716,6 +716,7 @@ public void addPerson(Scanner input) {
         }
     }
     
+    // NOTE! I did look up how to set up a file rewrite to remove a specific line [reason why there are comments for each step]
     // PRE: A valid Person object and File are passed in
     // POST: Removes the specified person from the file by rewriting it without that person
     private void removePersonFromFile(Person personToRemove, File file) {
